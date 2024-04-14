@@ -3,37 +3,35 @@ import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { nanoid } from 'nanoid'
 import { cors } from 'hono/cors'
+import { jwt } from 'hono/jwt'
 import { csrf } from 'hono/csrf'
 
 type Env = {
   TASKS: KVNamespace
   COMMENTS: KVNamespace
-  API_KEYS: KVNamespace
+  JWT_SECRET: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
 
 // Middleware
 app.use('*', cors())
+app.use('/api/v1/*', async (c, next) => {
+  try {
+    const jwtMiddleware = jwt({
+      secret: c.env.JWT_SECRET,
+    })
+    await jwtMiddleware(c, next)
+  } catch (error) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+})
 app.use('/api/v1/*', csrf())
 
 // Custom error handling
 app.onError((err, c) => {
   console.error('Unhandled error:', err)
   return c.json({ error: 'Internal Server Error' }, 500)
-})
-
-// Middleware for API key authentication
-app.use('/api/v1/*', async (c, next) => {
-  const apiKey = c.req.header('X-API-Key')
-  if (!apiKey) {
-    return c.json({ error: 'Missing API Key' }, 401)
-  }
-  const isValidKey = await c.env.API_KEYS.get(apiKey)
-  if (!isValidKey) {
-    return c.json({ error: 'Invalid API Key' }, 401)
-  }
-  await next()
 })
 
 // Custom rate limiting middleware

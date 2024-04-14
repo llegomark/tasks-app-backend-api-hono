@@ -3,9 +3,11 @@ compatibility_date = "2024-04-13"
 
 kv_namespaces = [
   { binding = "TASKS", id = "" },
-  { binding = "COMMENTS", id = "" },
-  { binding = "API_KEYS", id = "" }
+  { binding = "COMMENTS", id = "" }
 ]
+
+[vars]
+JWT_SECRET=""
 
 # [[r2_buckets]]
 # binding = "MY_BUCKET"
